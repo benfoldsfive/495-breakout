@@ -94,7 +94,7 @@ while running:
     # Update display
     pygame.display.flip()
 
-    #Cap the frame rate
+    #Cap the framerate
     clock.tick(60)
 
 # Quit game
