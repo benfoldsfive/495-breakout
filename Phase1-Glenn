@@ -31,6 +31,7 @@ COLS = 10
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Breakout Game")
+clock = pygame.time.Clock()
 
 # Paddle
 paddle = pygame.Rect(WIDTH // 2 - PADDLE_WIDTH // 2, HEIGHT - 20, PADDLE_WIDTH, PADDLE_HEIGHT)
@@ -61,7 +62,6 @@ while running:
         paddle.move_ip(5, 0)
 
     # Move
-    ball
     ball.move_ip(ball_dx, ball_dy)
 
     # Check ball collisions
@@ -93,6 +93,9 @@ while running:
 
     # Update display
     pygame.display.flip()
+
+    #Cap the frame rate
+    clock.tick(60)
 
 # Quit game
 pygame.quit()
