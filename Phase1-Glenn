@@ -37,8 +37,7 @@ paddle = pygame.Rect(WIDTH // 2 - PADDLE_WIDTH // 2, HEIGHT - 20, PADDLE_WIDTH, 
 
 # Ball
 ball = pygame.Rect(WIDTH // 2 - BALL_RADIUS, HEIGHT // 2 - BALL_RADIUS, BALL_RADIUS * 2, BALL_RADIUS * 2)
-ball_dx,   
- ball_dy = 5, -5
+ball_dx, ball_dy = 5, -5
 
 # Bricks
 bricks = []
@@ -61,7 +60,8 @@ while running:
     if keys[pygame.K_RIGHT] and paddle.right < WIDTH:
         paddle.move_ip(5, 0)
 
-    # Move ball
+    # Move
+    ball
     ball.move_ip(ball_dx, ball_dy)
 
     # Check ball collisions
