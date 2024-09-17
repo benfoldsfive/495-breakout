@@ -27,75 +27,110 @@ BRICK_HEIGHT = 20
 ROWS = 5
 COLS = 10
 
-#Initialize game objects
-pygame.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Breakout Game")
-clock = pygame.time.Clock()
 
-# Paddle
-paddle = pygame.Rect(WIDTH // 2 - PADDLE_WIDTH // 2, HEIGHT - 20, PADDLE_WIDTH, PADDLE_HEIGHT)
+class Paddle:
+    def __init__(self):
+        self.rect = pygame.Rect(WIDTH // 2 - PADDLE_WIDTH // 2, HEIGHT - 20, PADDLE_WIDTH, PADDLE_HEIGHT)
 
-# Ball
-ball = pygame.Rect(WIDTH // 2 - BALL_RADIUS, HEIGHT // 2 - BALL_RADIUS, BALL_RADIUS * 2, BALL_RADIUS * 2)
-ball_dx, ball_dy = 5, -5
+    def move(self, dx):
+        if 0 < self.rect.left + dx < WIDTH - PADDLE_WIDTH:
+            self.rect.move_ip(dx, 0)
 
-# Bricks
-bricks = []
-for row in range(ROWS):
-    for col in range(COLS):
-        brick = pygame.Rect(col * BRICK_WIDTH + 10, row * BRICK_HEIGHT + 10, BRICK_WIDTH, BRICK_HEIGHT)
-        bricks.append(brick)
-		
-#Game Loop
-running = True
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+    def draw(self, screen):
+        pygame.draw.rect(screen, WHITE, self.rect)
 
-    # Move paddle
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT] and paddle.left > 0:
-        paddle.move_ip(-5, 0)
-    if keys[pygame.K_RIGHT] and paddle.right < WIDTH:
-        paddle.move_ip(5, 0)
 
-    # Move
-    ball.move_ip(ball_dx, ball_dy)
+class Ball:
+    def __init__(self):
+        self.rect = pygame.Rect(WIDTH // 2 - BALL_RADIUS, HEIGHT // 2 - BALL_RADIUS, BALL_RADIUS * 2, BALL_RADIUS * 2)
+        self.dx, self.dy = 5, -5
 
-    # Check ball collisions
-    if ball.top <= 0:
-        ball_dy = -ball_dy
-    if ball.bottom >= HEIGHT:
-        running = False
-    if ball.left <= 0 or ball.right >= WIDTH:
-        ball_dx = -ball_dx
+    def move(self):
+        self.rect.move_ip(self.dx, self.dy)
 
-    # Check ball collision with paddle
-    if ball.colliderect(paddle):
-        ball_dy = -ball_dy
+    def check_collision_with_walls(self):
+        if self.rect.left <= 0 or self.rect.right >= WIDTH:
+            self.dx = -self.dx
+        if self.rect.top <= 0:
+            self.dy = -self.dy
 
-    # Check ball collision with bricks
-    for brick in bricks[:]:
-        if ball.colliderect(brick):
-            ball_dy = -ball_dy
-            bricks.remove(brick)
+    def check_collision_with_paddle(self, paddle):
+        if self.rect.colliderect(paddle.rect):
+            self.dy = -self.dy
 
-    # Fill screen
-    screen.fill(BLACK)
+    def check_collision_with_bricks(self, bricks):
+        for brick in bricks[:]:
+            if self.rect.colliderect(brick.rect):
+                self.dy = -self.dy
+                bricks.remove(brick)
 
-    # Draw objects
-    pygame.draw.rect(screen, WHITE, paddle)
-    pygame.draw.circle(screen, WHITE, ball.center, BALL_RADIUS)
-    for brick in bricks:
-        pygame.draw.rect(screen, RED, brick)
+    def draw(self, screen):
+        pygame.draw.circle(screen, WHITE, self.rect.center, BALL_RADIUS)
 
-    # Update display
-    pygame.display.flip()
 
-    #Cap the framerate
-    clock.tick(60)
+class Brick:
+    def __init__(self, x, y):
+        self.rect = pygame.Rect(x, y, BRICK_WIDTH, BRICK_HEIGHT)
 
-# Quit game
-pygame.quit()
+    def draw(self, screen):
+        pygame.draw.rect(screen, RED, self.rect)
+
+
+class BreakoutGame:
+    def __init__(self):
+        pygame.init()
+        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        pygame.display.set_caption("Breakout Game")
+        self.clock = pygame.time.Clock()
+
+        self.paddle = Paddle()
+        self.ball = Ball()
+        self.bricks = [Brick(col * BRICK_WIDTH + 10, row * BRICK_HEIGHT + 10) for row in range(ROWS) for col in range(COLS)]
+
+        self.running = True
+
+    def run(self):
+        while self.running:
+            self.handle_events()
+            self.update_game()
+            self.draw_game()
+            self.clock.tick(60)
+
+        pygame.quit()
+
+    def handle_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+
+    def update_game(self):
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            self.paddle.move(-5)
+        if keys[pygame.K_RIGHT]:
+            self.paddle.move(5)
+
+        self.ball.move()
+        self.ball.check_collision_with_walls()
+
+        if self.ball.rect.bottom >= HEIGHT:
+            self.running = False
+
+        self.ball.check_collision_with_paddle(self.paddle)
+        self.ball.check_collision_with_bricks(self.bricks)
+
+    def draw_game(self):
+        self.screen.fill(BLACK)
+
+        self.paddle.draw(self.screen)
+        self.ball.draw(self.screen)
+
+        for brick in self.bricks:
+            brick.draw(self.screen)
+
+        pygame.display.flip()
+
+
+if __name__ == "__main__":
+    game = BreakoutGame()
+    game.run()
