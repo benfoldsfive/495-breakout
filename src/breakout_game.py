@@ -81,13 +81,13 @@ class BreakoutGame:
                 if self.game_state == GAME_RUNNING:
                     if event.key == pygame.K_p:
                         self.game_state = PAUSED
-                        pygame.mixer.music.pause(-1)  # Pause background music
+                        pygame.mixer.music.pause()  # Pause background music
 
                 # Handle key presses in the pause screen
                 if self.game_state == PAUSED:
                     if event.key == pygame.K_RETURN:
                         self.game_state = GAME_RUNNING
-                        pygame.mixer.music.unpause(-1)  # Resume background music
+                        pygame.mixer.music.unpause()  # Resume background music
 
                 # Handle key presses in the game over screen
                 if self.game_state == GAME_OVER:
