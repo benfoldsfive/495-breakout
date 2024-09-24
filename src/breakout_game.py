@@ -27,10 +27,12 @@ class BreakoutGame:
         self.particles = []  # Particle effects
         self.fragments = []  # Brick fragments
         self.stars = [Star() for _ in range(100)]  # Background stars
+        self.level = 1
+        self.row_range = 5
 
         # Load sounds needed
         self.game_over_sound = pygame.mixer.Sound("sounds/lose_sound.wav") # Load game over sound
-        pygame.mixer.music.load("sounds/background_music.mp3")  # Load background mussic
+        pygame.mixer.music.load("sounds/background_music.mp3")  # Load background music
         pygame.mixer.music.set_volume(0.5)  # Set volume (0.0 to 1.0)
 
         self.game_state = MAIN_MENU
@@ -102,9 +104,9 @@ class BreakoutGame:
             # Paddle movement with arrow keys
             keys = pygame.key.get_pressed()
             if keys[pygame.K_LEFT]:
-                self.paddle.move(-5)
+                self.paddle.move(-9)
             if keys[pygame.K_RIGHT]:
-                self.paddle.move(5)
+                self.paddle.move(9)
 
             # Update star background
             for star in self.stars:
@@ -124,10 +126,30 @@ class BreakoutGame:
                 if fragment.width <= 0 or fragment.height <= 0:
                     self.fragments.remove(fragment)
 
+            # Check for level up (all bricks are cleared)
+            if len(self.bricks) == 0:
+                self.level_up()
+
             # Check for game over (if ball hits bottom)
             if self.ball.rect.bottom >= 600:
                 pygame.mixer.Sound.play(self.game_over_sound) # Play game over sound
                 self.game_state = GAME_OVER  # Change to GAME_OVER state when player loses
+
+    def level_up(self):
+        speed_increase = 1.1
+        self.level += 1
+        self.row_range += 1
+        # Set the next level
+        self.paddle = Paddle()
+        self.ball = Ball()
+        self.ball.dx *= speed_increase
+        self.ball.dy *= speed_increase
+        self.particles = []
+        self.fragments = []
+        if self.row_range > 10:
+            self.row_range = 10
+        self.bricks = [Brick(col * 80 + 10, row * 30 + 10) for row in range(self.row_range) for col in range(10)]
+        self.game_state = GAME_RUNNING
 
     def draw_game(self):
         self.screen.fill((0, 0, 0))  # Black background
@@ -150,6 +172,10 @@ class BreakoutGame:
         self.screen.blit(label, (400 - label.get_width() // 2, 300))
 
     def draw_game_running(self):
+        # Draw the level text
+        level_text = self.font.render(f"Level {self.level}", True, (255, 255, 255))
+        self.screen.blit(level_text, (400 - level_text.get_width() // 2, 300))
+
         # Draw stars, paddle, ball, bricks, particles, and fragments
         for star in self.stars:
             star.draw(self.screen)
