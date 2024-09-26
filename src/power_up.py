@@ -6,7 +6,7 @@ class PowerUp:
         self.x = x
         self.y = y
         self.power_up_type = power_up_type
-        self.rect = pygame.Rect(self.x, self.y, 20, 20)  # Set width and height as needed
+        self.rect = pygame.Rect(self.x, self.y, 20, 20)  
 
     def draw(self, screen, power_up_type):
         if power_up_type == "increase_paddle_size":
