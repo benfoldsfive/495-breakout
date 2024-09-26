@@ -4,7 +4,7 @@ from ball import Ball
 from brick import Brick
 from particle import Particle
 from star import Star
-from user_auth import load_users_from_file, register_user, login_user
+from user_auth import load_users_from_file, register_user, login_user, get_high_score, update_high_score
 
 # Game States
 MAIN_MENU = 0
@@ -29,6 +29,10 @@ class BreakoutGame:
         self.stars = [Star() for _ in range(100)]  # Background stars
         self.level = 1
         self.row_range = 5
+        self.score = 0
+        self.current_high_score = 0
+        self.lives = 3
+        self.stage_bricks = len(self.bricks)
 
         # Load sounds needed
         self.game_over_sound = pygame.mixer.Sound("sounds/lose_sound.wav") # Load game over sound
@@ -100,7 +104,7 @@ class BreakoutGame:
         if self.game_state == GAME_RUNNING:
             self.ball.move()
             self.ball.check_collision_with_walls()
-
+            
             # Paddle movement with arrow keys
             keys = pygame.key.get_pressed()
             if keys[pygame.K_LEFT]:
@@ -126,14 +130,29 @@ class BreakoutGame:
                 if fragment.width <= 0 or fragment.height <= 0:
                     self.fragments.remove(fragment)
 
+            # Check to update score (when brick destroyed)
+            if  len(self.bricks) < self.stage_bricks:
+                self.scoring()
+                
             # Check for level up (all bricks are cleared)
             if len(self.bricks) == 0:
                 self.level_up()
 
-            # Check for game over (if ball hits bottom)
-            if self.ball.rect.bottom >= 600:
+            # Check for game over (if ball hits bottom) 
+            if self.ball.rect.bottom >= 600 and self.lives > 1: 
+                self.lives -= 1 # Deducts a life
+                self.paddle = Paddle()
+                self.ball = Ball()
+            if self.ball.rect.bottom >= 600 and self.lives == 1:    
+                self.update_high_score()
+                self.current_high_score = get_high_score(self.current_user) # Get the current high score for the logged-in user
                 pygame.mixer.Sound.play(self.game_over_sound) # Play game over sound
                 self.game_state = GAME_OVER  # Change to GAME_OVER state when player loses
+
+    def scoring(self):
+        bricks_destroyed = self.stage_bricks - len(self.bricks)  # Only count bricks from the current level
+        self.score += bricks_destroyed * (self.level * 100)  # Add points incrementally
+        self.stage_bricks = len(self.bricks)  # Update stage_bricks to reflect the remaining bricks
 
     def level_up(self):
         speed_increase = 1.1
@@ -149,6 +168,7 @@ class BreakoutGame:
         if self.row_range > 10:
             self.row_range = 10
         self.bricks = [Brick(col * 80 + 10, row * 30 + 10) for row in range(self.row_range) for col in range(10)]
+        self.stage_bricks = len(self.bricks)
         self.game_state = GAME_RUNNING
 
     def draw_game(self):
@@ -173,8 +193,16 @@ class BreakoutGame:
 
     def draw_game_running(self):
         # Draw the level text
-        level_text = self.font.render(f"Level {self.level}", True, (255, 255, 255))
-        self.screen.blit(level_text, (400 - level_text.get_width() // 2, 300))
+        level_text = self.font.render(f"Level: {self.level}", True, (255, 255, 255))
+        self.screen.blit(level_text, (400 - level_text.get_width() // 2, 295))
+
+        # Draw the score text
+        score_text = self.font.render(f"Score: {self.score} High Score: {self.current_high_score}", True, (255, 255, 255))
+        self.screen.blit(score_text, (400 - score_text.get_width() // 2, 320))   
+
+        # Draw the lives text
+        lives_text = self.font.render(f"Lives: {self.lives}", True, (255, 255, 255))
+        self.screen.blit(lives_text, (400 - lives_text.get_width() // 2, 345))   
 
         # Draw stars, paddle, ball, bricks, particles, and fragments
         for star in self.stars:
@@ -211,9 +239,18 @@ class BreakoutGame:
         if login_user(username, password):
             self.logged_in = True
             self.current_user = username
-            print(f"Welcome back, {username}!")
+            self.current_high_score = get_high_score(self.current_user)
+            print(f"Welcome back, {username}! Your current high score is {self.current_high_score}.")
         else:
             print("Incorrect username or password")
+
+    def update_high_score(self):
+        current_high_score = get_high_score(self.current_user)
+        if self.score > current_high_score: # Update the high score if the new score is higher
+            update_high_score(self.current_user, self.score)  # Update high score in user_auth
+            print(f"New high score for {self.current_user}: {self.score}")
+            current_high_score = self.score
+
 
     def reset_game(self):
         self.paddle = Paddle()
@@ -221,4 +258,10 @@ class BreakoutGame:
         self.bricks = [Brick(col * 80 + 10, row * 30 + 10) for row in range(5) for col in range(10)]
         self.particles = []
         self.fragments = []
+        self.score = 0
+        self.level = 1
+        self.lives = 3
+        self.stage_bricks = len(self.bricks)
         self.game_state = MAIN_MENU
+        
+        
