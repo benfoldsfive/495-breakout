@@ -1,0 +1,252 @@
+import pygame
+import random
+import hashlib  # for password hashing
+import json
+
+
+# Setting the screen dimensions
+WIDTH = 800
+HEIGHT = 600
+
+# Defining the colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
+BLUE = (0, 0, 255)
+GREEN = (0, 255, 0)
+
+# Creating the paddle dimensions
+PADDLE_WIDTH = 100
+PADDLE_HEIGHT = 10
+
+# Creating the ball dimensions
+BALL_RADIUS = 10
+
+# Creating the brick dimensions
+BRICK_WIDTH = 70
+BRICK_HEIGHT = 20
+
+# Defining the number of rows and columns of bricks
+ROWS = 5
+COLS = 10
+
+# Game states
+MAIN_MENU = 0
+GAME_RUNNING = 1
+PAUSED = 2
+GAME_OVER = 3
+
+# Database for storing users (replace with a database solution)
+USERS_FILE = 'users.json'
+users = {}
+
+class Paddle:
+    def __init__(self):
+        self.rect = pygame.Rect(WIDTH // 2 - PADDLE_WIDTH // 2, HEIGHT - 20, PADDLE_WIDTH, PADDLE_HEIGHT)
+
+    def move(self, dx):
+        if 0 < self.rect.left + dx < WIDTH - PADDLE_WIDTH:
+            self.rect.move_ip(dx, 0)
+
+    def draw(self, screen):
+        pygame.draw.rect(screen, WHITE, self.rect)
+
+
+class Ball:
+    def __init__(self):
+        self.rect = pygame.Rect(WIDTH // 2 - BALL_RADIUS, HEIGHT // 2 - BALL_RADIUS, BALL_RADIUS * 2, BALL_RADIUS * 2)
+        self.dx, self.dy = 5, -5
+
+    def move(self):
+        self.rect.move_ip(self.dx, self.dy)
+
+    def check_collision_with_walls(self):
+        if self.rect.left <= 0 or self.rect.right >= WIDTH:
+            self.dx = -self.dx
+        if self.rect.top <= 0:
+            self.dy = -self.dy
+
+    def check_collision_with_paddle(self, paddle):
+        if self.rect.colliderect(paddle.rect):
+            self.dy = -self.dy
+
+    def check_collision_with_bricks(self, bricks):
+        for brick in bricks[:]:
+            if self.rect.colliderect(brick.rect):
+                self.dy = -self.dy
+                bricks.remove(brick)
+
+    def draw(self, screen):
+        pygame.draw.circle(screen, WHITE, self.rect.center, BALL_RADIUS)
+
+
+class Brick:
+    def __init__(self, x, y):
+        self.rect = pygame.Rect(x, y, BRICK_WIDTH, BRICK_HEIGHT)
+
+    def draw(self, screen):
+        pygame.draw.rect(screen, RED, self.rect)
+
+
+class BreakoutGame:
+    def __init__(self):
+        pygame.init()
+        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        pygame.display.set_caption("Breakout Game")
+        self.clock = pygame.time.Clock()
+
+        # Game objects
+        self.paddle = Paddle()
+        self.ball = Ball()
+        self.bricks = [Brick(col * BRICK_WIDTH + 10, row * BRICK_HEIGHT + 10) for row in range(ROWS) for col in range(COLS)]
+
+        # Game state
+        self.game_state = MAIN_MENU
+        self.running = True
+        self.logged_in = False
+        self.current_user = None
+
+        # Font for text
+        self.font = pygame.font.Font(None, 36)
+
+        # Load users from file
+        self.load_users_from_file()
+
+    def save_users_to_file(self):
+        """Save users dictionary to a JSON file."""
+        try:
+            with open(USERS_FILE, 'w') as f:
+                json.dump(users, f)
+                print("User data saved successfully.")
+        except Exception as e:
+            print(f"Error saving users to file: {e}")
+
+    def load_users_from_file(self):
+        """Load users dictionary from a JSON file."""
+        global users
+        try:
+            with open(USERS_FILE, 'r') as f:
+                content = f.read().strip()
+                if content:
+                    users = json.loads(content)
+                else:
+                    user = {} #If file is empty, intializes users as an empty dictionary
+            print("User data loaded successfully.")
+        except FileNotFoundError:
+            with open(USERS_FILE, 'w') as f:
+                json.dump({}, f)
+            users = {}
+            print("No user data found, starting fresh.")
+
+    def register_user(self, username, password):
+        hashed_password = hashlib.sha256(password.encode()).hexdigest()
+        if username in users:
+            print(f"Username {username} is already taken.")
+        else:
+            users[username] = hashed_password
+            self.save_users_to_file()  # Save users after registration
+            print(f"User {username} registered successfully!")
+
+    def login_user(self, username, password):
+        if username in users:
+            hashed_password = hashlib.sha256(password.encode()).hexdigest()
+            if users[username] == hashed_password:
+                self.logged_in = True
+                self.current_user = username
+                print(f"Welcome back, {username}!")
+            else:
+                print("Incorrect password")
+        else:
+            print(f"Username {username} not found")
+
+    def handle_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+            elif event.type == pygame.KEYDOWN:
+                if self.game_state == MAIN_MENU and event.key == pygame.K_RETURN and self.logged_in:
+                    self.game_state = GAME_RUNNING  # Start game after logging in
+
+                if not self.logged_in:
+                    if event.key == pygame.K_r:  # Register
+                        username = input("Enter username: ")
+                        password = input("Enter password: ")
+                        self.register_user(username, password)
+                    elif event.key == pygame.K_l:  # Login
+                        username = input("Enter username: ")
+                        password = input("Enter password: ")
+                        self.login_user(username, password)
+
+                if event.key == pygame.K_p and self.game_state == GAME_RUNNING:
+                    self.game_state = PAUSED  # Pause the game
+
+                if event.key == pygame.K_r and self.game_state == GAME_OVER:
+                    self.reset_game()  # Restart game after game over
+
+                if event.key == pygame.K_RETURN and self.game_state == PAUSED:
+                    self.game_state = GAME_RUNNING  # Resume the game from pause
+
+    def reset_game(self):
+        self.paddle = Paddle()
+        self.ball = Ball()
+        self.bricks = [Brick(col * BRICK_WIDTH + 10, row * BRICK_HEIGHT + 10) for row in range(ROWS) for col in range(COLS)]
+        self.game_state = MAIN_MENU  # Reset to main menu
+
+    def update_game(self):
+        if self.game_state == GAME_RUNNING:
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_LEFT]:
+                self.paddle.move(-5)
+            if keys[pygame.K_RIGHT]:
+                self.paddle.move(5)
+
+            self.ball.move()
+            self.ball.check_collision_with_walls()
+
+            if self.ball.rect.bottom >= HEIGHT:
+                self.game_state = GAME_OVER
+
+            self.ball.check_collision_with_paddle(self.paddle)
+            self.ball.check_collision_with_bricks(self.bricks)
+
+    def draw_game(self):
+        if self.game_state == MAIN_MENU:
+            self.screen.fill(BLACK)
+            if self.logged_in:
+                text = self.font.render("Press Enter to Start the Game", True, WHITE)
+            else:
+                text = self.font.render("Please Login (L) or Register (R)", True, WHITE)
+            self.screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2))
+
+        elif self.game_state == GAME_RUNNING:
+            self.screen.fill(BLACK)
+            self.paddle.draw(self.screen)
+            self.ball.draw(self.screen)
+            for brick in self.bricks:
+                brick.draw(self.screen)
+
+        elif self.game_state == PAUSED:
+            self.screen.fill(BLACK)
+            text = self.font.render("Paused - Press Enter to Resume", True, WHITE)
+            self.screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2))
+
+        elif self.game_state == GAME_OVER:
+            self.screen.fill(BLACK)
+            text = self.font.render("Game Over - Press R to Restart", True, WHITE)
+            self.screen.blit(text, (WIDTH // 2 - text.get_width() // 2, HEIGHT // 2))
+
+        pygame.display.flip()
+
+    def run(self):
+        while self.running:
+            self.handle_events()
+            self.update_game()
+            self.draw_game()
+            self.clock.tick(60)
+
+        pygame.quit()
+
+
+if __name__ == "__main__":
+    game = BreakoutGame()
+    game.run()
