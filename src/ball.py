@@ -1,8 +1,6 @@
 import pygame
 import random
-from particle import Particle
-from src.power_up import PowerUp
-
+from particle import Particle  # Import the Particle class
 
 class Ball:
     def __init__(self):
@@ -30,13 +28,30 @@ class Ball:
             self.dy = -self.dy
 
     def check_collision_with_paddle(self, paddle, particles):
-        self.paddle_hit_sound = pygame.mixer.Sound("../sounds/hit_paddle.wav") # Load paddle hit sound
+        self.paddle_hit_sound = pygame.mixer.Sound("sounds/hit_paddle.wav") # Load paddle hit sound
         if self.rect.colliderect(paddle.rect):
             self.dy = -self.dy  # Bounce off the paddle
             pygame.mixer.Sound.play(self.paddle_hit_sound)  # Play paddle hit sound
             # Create fire particles on paddle hit
             for _ in range(10):
                 particles.append(Particle(self.rect.centerx, self.rect.centery))
+
+    def check_collision_with_bricks(self, bricks, particles, fragments):
+        self.brick_break_sound = pygame.mixer.Sound("sounds/destroy_sound.wav") # Load brick break sound
+        for brick in bricks[:]:
+            if self.rect.colliderect(brick.rect):
+                self.dy = -self.dy  # Bounce off the brick
+                pygame.mixer.Sound.play(self.paddle_hit_sound) # Play brick break sound
+                bricks.remove(brick)
+
+                # Create fire particles when a brick is destroyed
+                for _ in range(10):
+                    particles.append(Particle(brick.rect.centerx, brick.rect.centery))
+
+                # Break the brick into fragments
+                num_fragments = random.randint(4, 10)  # Random number of fragments
+                for _ in range(num_fragments):
+                    fragments.append(brick.break_into_fragments())
 
     def draw(self, screen):
         # Draw the fire trail effect

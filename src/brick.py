@@ -9,7 +9,6 @@ class Brick:
         self.flicker_offset = 0  # Control flicker more subtly
         self.max_flicker_offset = 2  # Max amount for flickering movement
         self.flicker_direction = 1  # Flicker oscillates back and forth
-        self.power_up_type = None
 
     def draw(self, screen):
         # Update the frame counter for flicker effect
