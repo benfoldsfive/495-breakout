@@ -208,7 +208,6 @@ class BreakoutGame:
             # Check for game over (if ball hits bottom) 
             if self.ball.rect.bottom >= 600 and self.lives > 1: 
                 self.lives -= 1 # Deducts a life
-                self.paddle = Paddle()
                 self.ball = Ball()
             if self.ball.rect.bottom >= 600 and self.lives == 1:    
                 self.update_high_score()
