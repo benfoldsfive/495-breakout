@@ -410,6 +410,8 @@ class BreakoutGame:
                 print(f"Welcome back, {username}! Your high score is {self.current_high_score}.")
                 self.game_state = POST_LOGIN_MENU
             else:
+                self.username_input.reset()
+                self.password_input.reset()
                 print("Incorrect username or password.")
         else:
             print("Username and password cannot be empty.")
