@@ -49,9 +49,7 @@ class BreakoutGame:
         self.power_up_start_time = 0
         self.paddle_width_default = self.paddle.rect.width
 
-        # Load sounds needed
-        self.game_over_sound = pygame.mixer.Sound("../sounds/lose_sound.wav") # Load game over sound
-        pygame.mixer.music.load("../sounds/background_music.mp3")  # Load background music
+        pygame.mixer.music.load("sounds/background_music.mp3")  # Load background music
         pygame.mixer.music.set_volume(0.5)  # Set volume (0.0 to 1.0)
 
         self.game_state = MAIN_MENU
@@ -84,6 +82,9 @@ class BreakoutGame:
         return bricks
 
     def activate_power_up(self, power_up_type):
+        activate_power_up = pygame.mixer.Sound("sounds/power_up_activate.wav")  # Load activation sound for power up
+        pygame.mixer.Sound.play(activate_power_up) # Play activation sound for power up
+        
         if power_up_type == "increase_paddle_size":
             self.paddle.rect.width = self.paddle_width_default * 1.5  # Increase paddle size
         elif power_up_type == "slow_ball":
@@ -162,16 +163,17 @@ class BreakoutGame:
                     self.reset_game()
 
     def check_collision_with_bricks(self, bricks, particles, fragments):
-        self.brick_break_sound = pygame.mixer.Sound("../sounds/destroy_sound.wav") # Load brick break sound
-        self.paddle_hit_sound = pygame.mixer.Sound("../sounds/hit_paddle.wav")  # Load paddle hit sound
+        brick_break_sound = pygame.mixer.Sound("sounds/destroy_sound.wav") # Load brick break sound
+        power_up_drop_sound = pygame.mixer.Sound("sounds/power_up_drop.wav")  # Load power-up drop sound
         for brick in bricks[:]:
             if self.ball.rect.colliderect(brick.rect):
                 self.ball.dy = -self.ball.dy  # Bounce off the brick
-                pygame.mixer.Sound.play(self.paddle_hit_sound) # Play brick break sound
+                pygame.mixer.Sound.play(brick_break_sound) # Play brick break sound
 
                 if brick.power_up_type:  # If the brick has a power-up
                     power_up = PowerUp(brick.rect.x + 25, brick.rect.y, brick.power_up_type)
                     self.power_ups.append(power_up)
+                    pygame.mixer.Sound.play(power_up_drop_sound) # Play power-up drop sound
                     print(f"Power-up created: {brick.power_up_type}")
                 bricks.remove(brick)
 
@@ -185,6 +187,8 @@ class BreakoutGame:
                     fragments.append(brick.break_into_fragments())
 
     def update_game(self):
+        game_over = pygame.mixer.Sound("sounds/game_over.wav") # Load sound for game over sound
+        lose_life = pygame.mixer.Sound("sounds/lost_life.wav") # Load sound for a lost life
         if self.game_state == GAME_RUNNING:
             self.ball.move()
             self.ball.check_collision_with_walls()
@@ -225,11 +229,12 @@ class BreakoutGame:
             # Check for game over (if ball hits bottom) 
             if self.ball.rect.bottom >= 600 and self.lives > 1: 
                 self.lives -= 1 # Deducts a life
+                pygame.mixer.Sound.play(lose_life) # Play sound for a lost life
                 self.ball = Ball()
             if self.ball.rect.bottom >= 600 and self.lives == 1:    
                 self.update_high_score()
                 self.current_high_score = get_high_score(self.current_user) # Get the current high score for the logged-in user
-                pygame.mixer.Sound.play(self.game_over_sound) # Play game over sound
+                pygame.mixer.Sound.play(game_over) # Play game over sound
                 self.game_state = GAME_OVER  # Change to GAME_OVER state when player loses
 
             # Power-up movement and collection

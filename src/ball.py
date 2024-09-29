@@ -27,10 +27,10 @@ class Ball:
             self.dy = -self.dy
 
     def check_collision_with_paddle(self, paddle, particles):
-        self.paddle_hit_sound = pygame.mixer.Sound("../sounds/hit_paddle.wav") # Load paddle hit sound
+        paddle_hit_sound = pygame.mixer.Sound("sounds/hit_paddle.wav") # Load paddle hit sound
         if self.rect.colliderect(paddle.rect):
             self.dy = -self.dy  # Bounce off the paddle
-            pygame.mixer.Sound.play(self.paddle_hit_sound)  # Play paddle hit sound
+            pygame.mixer.Sound.play(paddle_hit_sound)  # Play paddle hit sound
             # Create fire particles on paddle hit
             for _ in range(10):
                 particles.append(Particle(self.rect.centerx, self.rect.centery))
