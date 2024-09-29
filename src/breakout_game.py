@@ -8,12 +8,15 @@ from particle import Particle
 from power_up import PowerUp
 from star import Star
 from user_auth import load_users_from_file, register_user, login_user, get_high_score, update_high_score
+from text_input_box import TextInputBox
+from button import Button
 
 # Game States
 MAIN_MENU = 0
 GAME_RUNNING = 1
 PAUSED = 2
 GAME_OVER = 3
+POST_LOGIN_MENU = 4
 
 # Power-up variables
 POWER_UP_SIZE = 20
@@ -55,6 +58,12 @@ class BreakoutGame:
         self.logged_in = False
         self.current_user = None
         self.focused = True  # To track if the window is in focus
+
+        self.username_input = TextInputBox(300, 250, 200, 50)
+        self.password_input = TextInputBox(300, 350, 200, 50)
+
+        self.login_button = Button(300, 450, 200, 50, "Login")
+        self.register_button = Button(300, 520, 200, 50, "Register")
 
         self.font = pygame.font.Font(None, 36)  # Font for text
 
@@ -98,8 +107,11 @@ class BreakoutGame:
     def run(self):
         while True:
             self.handle_events()  # Handle events such as quit, focus loss, etc.
-            if self.focused and self.game_state != GAME_OVER:
-                self.update_game()  # Only update the game if in focus and not game over
+            if self.focused:
+                if self.game_state == GAME_RUNNING:
+                    self.update_game()
+                elif self.game_state == POST_LOGIN_MENU:
+                    self.draw_post_login_menu()  # Only update the game if in focus and not game over
             self.draw_game()  # Draw the game regardless of focus to keep screen updated
             self.clock.tick(60)
 
@@ -115,34 +127,39 @@ class BreakoutGame:
             if event.type == pygame.WINDOWFOCUSGAINED:
                 self.focused = True  # Resume game when focus is regained
 
-            # Handle key presses (only if event is a key event)
-            if event.type == pygame.KEYDOWN:
-                # Handle key presses in the main menu
-                if self.game_state == MAIN_MENU:
-                    if event.key == pygame.K_RETURN and self.logged_in:
-                        self.game_state = GAME_RUNNING
-                        pygame.mixer.music.play(-1)  # Start or resume background music
-                    elif event.key == pygame.K_r:
-                        self.register_user()
-                    elif event.key == pygame.K_l:
-                        self.login_user()
+            # Handle events in the main menu
+            if self.game_state == MAIN_MENU:
+                self.username_input.handle_event(event)
+                self.password_input.handle_event(event)
 
-                # Handle key presses when the game is running
-                if self.game_state == GAME_RUNNING:
+                if self.login_button.handle_event(event):
+                    self.login_user()
+                elif self.register_button.handle_event(event):
+                    self.register_user()
+
+            if self.game_state == POST_LOGIN_MENU:
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        self.game_state = GAME_RUNNING
+                        pygame.mixer.music.play(-1)
+
+            # Handle key presses when the game is running
+            if self.game_state == GAME_RUNNING:
+                if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_p:
                         self.game_state = PAUSED
                         pygame.mixer.music.pause()  # Pause background music
 
-                # Handle key presses in the pause screen
-                if self.game_state == PAUSED:
-                    if event.key == pygame.K_RETURN:
-                        self.game_state = GAME_RUNNING
-                        pygame.mixer.music.unpause()  # Resume background music
+            # Handle key presses in the pause screen
+            if self.game_state == PAUSED:
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                    self.game_state = GAME_RUNNING
+                    pygame.mixer.music.unpause()  # Resume background music
 
-                # Handle key presses in the game over screen
-                if self.game_state == GAME_OVER:
-                    if event.key == pygame.K_r:
-                        self.reset_game()
+            # Handle key presses in the game over screen
+            if self.game_state == GAME_OVER:
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+                    self.reset_game()
 
     def check_collision_with_bricks(self, bricks, particles, fragments):
         self.brick_break_sound = pygame.mixer.Sound("../sounds/destroy_sound.wav") # Load brick break sound
@@ -258,6 +275,8 @@ class BreakoutGame:
             self.draw_main_menu()
         elif self.game_state == GAME_RUNNING:
             self.draw_game_running()
+        elif self.game_state == POST_LOGIN_MENU:
+            self.draw_post_login_menu()
         elif self.game_state == PAUSED:
             self.draw_paused_screen()
         elif self.game_state == GAME_OVER:
@@ -266,22 +285,62 @@ class BreakoutGame:
         pygame.display.flip()
 
     def draw_main_menu(self):
-        self.screen.fill((0, 0, 0))  # Clear the screen
-        menu_text = "Press Enter to Start the Game" if self.logged_in else "Please Login (L) or Register (R)"
-        menu_label = self.font.render(menu_text, True, (255, 255, 255))
-        # Position the main label at the center of the screen (400 is assumed to be half the width of the screen)
-        menu_label_x = 400 - menu_label.get_width() // 2
-        menu_label_y = 300
-        # Blit the main menu text to the screen
-        self.screen.blit(menu_label, (menu_label_x, menu_label_y))
-        high_score_text = f"High Score: {self.current_high_score}" if self.logged_in else ""
-        high_score_label = self.font.render(high_score_text, True, (255, 255, 255))
-        high_score_x = 400 - high_score_label.get_width() // 2
-        high_score_y = menu_label_y + menu_label.get_height() + 20
-        self.screen.blit(high_score_label, (high_score_x, high_score_y))
+        self.screen.fill((0, 0, 0))  # Set background color to black
 
-        # Blit the high score text to the screen
-        self.screen.blit(high_score_label, (high_score_x, high_score_y))
+        # Draw the main menu title
+        title_font = pygame.font.Font(None, 64)  # Larger font for the title
+        menu_label = title_font.render("Welcome to Breakout", True, (255, 255, 255))
+        self.screen.blit(menu_label, (400 - menu_label.get_width() // 2, 100))
+
+        # Render labels for username and password input fields
+        label_font = pygame.font.Font(None, 36)  # Smaller font for labels
+        username_label = label_font.render("Username:", True, (255, 255, 255))
+        self.screen.blit(username_label, (250, 240))
+
+        password_label = label_font.render("Password:", True, (255, 255, 255))
+        self.screen.blit(password_label, (250, 340))
+
+        # Adjust the position of the input boxes
+        self.username_input.rect.topleft = (400, 230)
+        self.password_input.rect.topleft = (400, 330)
+
+        # Draw input boxes
+        self.username_input.draw(self.screen)
+        self.password_input.draw(self.screen)
+
+        # Draw the login and register buttons below the input fields with padding
+        self.login_button.rect.topleft = (300, 450)  # Adjust position for login button
+        self.register_button.rect.topleft = (500, 450)  # Adjust position for register button
+
+        self.login_button.draw(self.screen)
+        self.register_button.draw(self.screen)
+
+        # Optional: Add an instructional message at the bottom
+        instruction_font = pygame.font.Font(None, 28)
+        instruction_text = instruction_font.render("Please log in or register to start playing!", True, (200, 200, 200))
+        self.screen.blit(instruction_text, (400 - instruction_text.get_width() // 2, 530))
+
+        pygame.display.flip()  # Update the display
+
+    def draw_post_login_menu(self):
+        self.screen.fill((0, 0, 0))  # Black background
+
+        # Title: Welcome message
+        title_font = pygame.font.Font(None, 64)
+        welcome_label = title_font.render(f"Welcome, {self.current_user}!", True, (255, 255, 255))
+        self.screen.blit(welcome_label, (400 - welcome_label.get_width() // 2, 200))
+
+        # High Score Display
+        score_font = pygame.font.Font(None, 36)
+        high_score_label = score_font.render(f"High Score: {self.current_high_score}", True, (255, 255, 255))
+        self.screen.blit(high_score_label, (400 - high_score_label.get_width() // 2, 270))
+
+        # Prompt to press Enter
+        instruction_font = pygame.font.Font(None, 36)
+        instruction_label = instruction_font.render("Press Enter to start the game", True, (200, 200, 200))
+        self.screen.blit(instruction_label, (400 - instruction_label.get_width() // 2, 350))
+
+        pygame.display.flip()  # Update the display
 
     def draw_game_running(self):
         # Draw the level text
@@ -324,21 +383,31 @@ class BreakoutGame:
         self.screen.blit(label, (400 - label.get_width() // 2, 300))
 
     def register_user(self):
-        username = input("Enter username: ")
-        password = input("Enter password: ")
-        register_user(username, password)
-        print(f"User {username} registered!")
+        username = self.username_input.text.strip()
+        password = self.password_input.text.strip()
+
+        if username and password:
+            register_user(username, password)
+            self.username_input.reset()
+            self.password_input.reset()
+        else:
+            print("Username and password cannot be empty.")
 
     def login_user(self):
-        username = input("Enter username: ")
-        password = input("Enter password: ")
-        if login_user(username, password):
-            self.logged_in = True
-            self.current_user = username
-            self.current_high_score = get_high_score(self.current_user)
-            print(f"Welcome back, {username}! Your current high score is {self.current_high_score}.")
+        username = self.username_input.text.strip()
+        password = self.password_input.text.strip()
+
+        if username and password:
+            if login_user(username, password):
+                self.logged_in = True
+                self.current_user = username
+                self.current_high_score = get_high_score(self.current_user)
+                print(f"Welcome back, {username}! Your high score is {self.current_high_score}.")
+                self.game_state = POST_LOGIN_MENU
+            else:
+                print("Incorrect username or password.")
         else:
-            print("Incorrect username or password")
+            print("Username and password cannot be empty.")
 
     def update_high_score(self):
         current_high_score = get_high_score(self.current_user)
@@ -359,5 +428,3 @@ class BreakoutGame:
         self.lives = 3
         self.stage_bricks = len(self.bricks)
         self.game_state = MAIN_MENU
-        
-        

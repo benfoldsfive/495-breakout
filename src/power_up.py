@@ -20,4 +20,4 @@ class PowerUp:
         print(f"Power-up activated: {self.power_up_type}")
 
     def move(self):
-        self.rect.y += 5
+        self.rect.y += 2

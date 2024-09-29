@@ -1,8 +1,5 @@
 import pygame
-import random
 from particle import Particle
-from src.power_up import PowerUp
-
 
 class Ball:
     def __init__(self):

@@ -32,6 +32,7 @@ def register_user(username, password):
             "password": hashed_password,
             "high_score": 0  # Initialize high score to 0 when registering
         }
+        print(f"User {username} registered!")
         save_users_to_file()
 
 def login_user(username, password):
