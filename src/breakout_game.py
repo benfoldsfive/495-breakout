@@ -321,7 +321,7 @@ class BreakoutGame:
         self.login_button.draw(self.screen)
         self.register_button.draw(self.screen)
 
-        # Optional: Add an instructional message at the bottom
+        # Add an instructional message at the bottom
         instruction_font = pygame.font.Font(None, 28)
         instruction_text = instruction_font.render("Please log in or register to start playing!", True, (200, 200, 200))
         self.screen.blit(instruction_text, (400 - instruction_text.get_width() // 2, 530))
@@ -393,7 +393,7 @@ class BreakoutGame:
         password = self.password_input.text.strip()
 
         if username and password:
-            register_user(username, password)
+            register_user(username, password)   # Clears Text Boxes after registration
             self.username_input.reset()
             self.password_input.reset()
         else:
