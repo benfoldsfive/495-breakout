@@ -1,14 +1,15 @@
-# Text Input Box for Username Entry
+# Password Input Box Field
 
 import pygame
 
-class TextInputBox:
+class PassTextInputBox:
     def __init__(self, x, y, w, h, text=''):
         self.rect = pygame.Rect(x, y, w, h)
         self.color = pygame.Color('lightskyblue3')
         self.text = text
+        self.masked_text = ''  # Masked version of the text
         self.font = pygame.font.Font(None, 36)
-        self.txt_surface = self.font.render(text, True, self.color)
+        self.txt_surface = self.font.render(self.masked_text, True, self.color)
         self.active = False
 
     def handle_event(self, event):
@@ -24,17 +25,21 @@ class TextInputBox:
                 if event.key == pygame.K_RETURN:
                     print(self.text)  # Can capture this input elsewhere
                     self.text = ''  # Reset after pressing Enter
+                    self.masked_text = ''
                 elif event.key == pygame.K_BACKSPACE:
                     self.text = self.text[:-1]
+                    self.masked_text = self.masked_text[:-1]
                 else:
                     self.text += event.unicode
-                self.txt_surface = self.font.render(self.text, True, self.color)
+                    self.masked_text += '*'  # Append '*' for each character typed
+                self.txt_surface = self.font.render(self.masked_text, True, self.color)
 
     def draw(self, screen):
-        # Render the current text
+        # Render the masked text
         screen.blit(self.txt_surface, (self.rect.x + 5, self.rect.y + 5))
         pygame.draw.rect(screen, self.color, self.rect, 2)
 
     def reset(self):
         self.text = ''
-        self.txt_surface = self.font.render(self.text, True, self.color) 
+        self.masked_text = ''
+        self.txt_surface = self.font.render(self.masked_text, True, self.color)

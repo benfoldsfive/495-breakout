@@ -9,6 +9,7 @@ from power_up import PowerUp
 from star import Star
 from user_auth import load_users_from_file, register_user, login_user, get_high_score, update_high_score
 from text_input_box import TextInputBox
+from passtext_input_box import PassTextInputBox
 from button import Button
 
 # Game States
@@ -58,7 +59,7 @@ class BreakoutGame:
         self.focused = True  # To track if the window is in focus
 
         self.username_input = TextInputBox(300, 250, 200, 50)
-        self.password_input = TextInputBox(300, 350, 200, 50)
+        self.password_input = PassTextInputBox(300, 350, 200, 50)
 
         self.login_button = Button(300, 450, 200, 50, "Login")
         self.register_button = Button(300, 520, 200, 50, "Register")
@@ -137,7 +138,7 @@ class BreakoutGame:
                     self.login_user()
                 elif self.register_button.handle_event(event):
                     self.register_user()
-
+            # Handle eveents in the post login menu
             if self.game_state == POST_LOGIN_MENU:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_RETURN:
@@ -404,13 +405,13 @@ class BreakoutGame:
 
         if username and password:
             if login_user(username, password):
-                self.logged_in = True
+                self.logged_in = True       # When user data succefully authorized, logged_in set True, Gets User and highscore
                 self.current_user = username
                 self.current_high_score = get_high_score(self.current_user)
-                print(f"Welcome back, {username}! Your high score is {self.current_high_score}.")
-                self.game_state = POST_LOGIN_MENU
+                print(f"Welcome back, {username}! Your high score is {self.current_high_score}.")   # Prints in command line
+                self.game_state = POST_LOGIN_MENU   # Sets game state to post login menu
             else:
-                self.username_input.reset()
+                self.username_input.reset()     # Username and password fields are cleared when incorrect info inputted
                 self.password_input.reset()
                 print("Incorrect username or password.")
         else:
