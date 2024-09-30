@@ -35,4 +35,4 @@ class TextInputBox:
 
     def reset(self):
         self.text = ''
-        self.txt_surface = self.font.render(self.text, True, self.color) 
+        self.txt_surface = self.font.render(self.text, True, self.color)

@@ -1,5 +1,12 @@
 import pygame
+import os
+from pathlib import Path
+from button import Button
 from particle import Particle
+
+
+current_dir = Path(__file__).parent.resolve() # Get the current directory
+sounds_dir = current_dir.parent / "sounds" # Navigate to the sounds directory
 
 class Ball:
     def __init__(self):
@@ -27,7 +34,7 @@ class Ball:
             self.dy = -self.dy
 
     def check_collision_with_paddle(self, paddle, particles):
-        paddle_hit_sound = pygame.mixer.Sound("sounds/hit_paddle.wav") # Load paddle hit sound
+        paddle_hit_sound = pygame.mixer.Sound(sounds_dir / "hit_paddle.wav") # Load paddle hit sound using cross platform paths
         if self.rect.colliderect(paddle.rect):
             self.dy = -self.dy  # Bounce off the paddle
             pygame.mixer.Sound.play(paddle_hit_sound)  # Play paddle hit sound
