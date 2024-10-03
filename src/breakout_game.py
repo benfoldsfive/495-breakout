@@ -1,8 +1,6 @@
 import random
 
 import pygame
-import pygame
-import os
 from pathlib import Path
 from paddle import Paddle
 from ball import Ball
@@ -42,6 +40,8 @@ class BreakoutGame:
         # Game objects
         self.paddle = Paddle()
         self.ball = Ball()
+        self.default_ball_dx = self.ball.dx
+        self.default_ball_dy = self.ball.dx
         self.row_range = 5
         self.bricks = self.create_bricks(self.row_range, 10)
         self.particles = []  # Particle effects
@@ -96,8 +96,10 @@ class BreakoutGame:
         if power_up_type == "increase_paddle_size":
             self.paddle.rect.width = self.paddle_width_default * 1.5  # Increase paddle size
         elif power_up_type == "slow_ball":
-            self.ball.dx *= 0.7  # Slow down the ball speed
-            self.ball.dy *= 0.7
+            slow_ball_dx = self.ball.dx * 0.7
+            slow_ball_dy = self.ball.dy * 0.7
+            self.ball.dx = slow_ball_dx # Slow down the ball speed
+            self.ball.dy = slow_ball_dy
         elif power_up_type == "extra_life":
             self.lives += 1  # Add extra life
 
@@ -108,8 +110,13 @@ class BreakoutGame:
         if self.active_power_up == "increase_paddle_size":
             self.paddle.rect.width = self.paddle_width_default  # Reset paddle size
         elif self.active_power_up == "slow_ball":
-            self.ball.dx /= 0.7  # Restore ball speed
-            self.ball.dy /= 0.7
+            # Preserve current direction of the ball
+            direction_x = 1 if self.ball.dx > 0 else -1
+            direction_y = 1 if self.ball.dy > 0 else -1
+
+            # Reset speed and apply preserved direction
+            self.ball.dx = self.default_ball_dx * direction_x
+            self.ball.dy = self.default_ball_dy * direction_y
 
         self.active_power_up = None
 
@@ -273,6 +280,8 @@ class BreakoutGame:
         self.ball = Ball()
         self.ball.dx *= speed_increase
         self.ball.dy *= speed_increase
+        self.default_ball_dx = self.ball.dx
+        self.default_ball_dy = self.ball.dy
         self.particles = []
         self.fragments = []
         if self.row_range > 10:
@@ -429,7 +438,6 @@ class BreakoutGame:
         if self.score > current_high_score: # Update the high score if the new score is higher
             update_high_score(self.current_user, self.score)  # Update high score in user_auth
             print(f"New high score for {self.current_user}: {self.score}")
-            current_high_score = self.score
 
     def reset_game(self):
         self.paddle = Paddle()

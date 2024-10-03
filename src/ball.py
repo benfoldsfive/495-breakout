@@ -1,7 +1,5 @@
 import pygame
-import os
 from pathlib import Path
-from button import Button
 from particle import Particle
 
 
