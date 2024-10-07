@@ -1,8 +1,27 @@
+"""
+Particle Class
+--------------
+Represents a particle in a particle system, simulating effects like flames or explosions.
+
+Handles the position, velocity, size, color, and lifetime of individual particles.
+Particles can be rendered on the screen and will update their properties over time.
+"""
 import pygame
 import random
 
 class Particle:
     def __init__(self, x, y):
+        """
+        Initializes the Particle instance.
+
+        Arguments:
+            - x: Initial x-coordinate of the particle.
+            - y: Initial y-coordinate of the particle.
+
+        This constructor sets the initial position, velocity, size, lifetime, and color
+        of the particle. The color is randomly chosen within a vibrant range suitable for
+        fire or explosive effects.
+        """
         self.x = x  # X position of the particle
         self.y = y  # Y position of the particle
         self.vx = random.uniform(-1.5, 1.5)  # Random horizontal velocity for curling effect
@@ -18,6 +37,13 @@ class Particle:
         )
 
     def update(self):
+        """
+        Updates the particle's position, size, color, and lifetime.
+
+        This method is called on each frame to apply the velocity to the particle's
+        position, decrease its size over time, change its color to simulate cooling,
+        and reduce its lifetime. If the lifetime reaches zero, the particle is considered expired.
+        """
         # Update particle position
         self.x += self.vx  # Apply horizontal velocity (curling effect)
         self.y += self.vy  # Apply vertical velocity (flame-like motion)
@@ -36,6 +62,15 @@ class Particle:
         self.lifetime -= 1
 
     def draw(self, screen):
+        """
+        Draws the particle on the specified screen.
+
+        Arguments:
+            - screen: The surface on which to draw the particle.
+
+        This method only draws the particle if it has a positive size and lifetime.
+        The particle is rendered as a circle with its current position, size, and color.
+        """
         # Only draw the particle if it still has a positive size and lifetime
         if self.lifetime > 0 and self.size > 0:
             pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), int(self.size))
